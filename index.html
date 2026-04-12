@@ -5,28 +5,21 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Premium Sektör Analiz Portalı</title>
     
-    <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-    <!-- FontAwesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- PapaParse -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
     
-    <!-- Kendi CSS Dosyamız -->
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-    <!-- Yükleme Ekranı -->
     <div id="loader">
         <i class="fa-solid fa-circle-notch fa-spin"></i>
         <p>Sektör Verileri Yükleniyor...</p>
     </div>
 
-    <!-- KOYU TEMA SOL MENÜ -->
     <aside class="sidebar" id="sidebar">
         <div class="sidebar-header">
-            <!-- Mobilde belirginleştirilmiş sol tarafa hizalı buton -->
             <button class="mobile-menu-btn" onclick="toggleMenu()">
                 <i class="fa-solid fa-bars"></i> <span>Sektörler</span>
             </button>
@@ -37,27 +30,21 @@
             <input type="text" id="searchInput" placeholder="Sektör Ara..." onkeyup="filterSectors()">
         </div>
         <ul class="sector-list" id="sectorList">
-            <!-- Veriler JS ile gelecek -->
-        </ul>
+            </ul>
     </aside>
 
-    <!-- Ana İçerik -->
     <main class="main-content">
-        <!-- KARŞILAMA EKRANI -->
         <div class="welcome-screen" id="welcomeScreen">
             <div class="welcome-content-wrapper">
                 
-                <!-- SOL TARAF: BAŞLIK VE KUTUCUKLAR -->
                 <div class="welcome-left">
                     <h1 class="hero-title">Antalya Sektör Kütüphanesi</h1>
                     
                     <div class="welcome-grid">
-                        <!-- 1. Kutucuk -->
                         <div class="w-card w-card-dark">
                             <h2>Antalya'nın tüm sektörlerini tek bir platformda, derinlemesine keşfedin.</h2>
                         </div>
                         
-                        <!-- 2. Kutucuk (Dairesel İkonlar - Artık Tıklanabilir) -->
                         <div class="w-card w-card-circular">
                             <div class="circle-item" onclick="openMediaView('read')">
                                 <div class="circle-icon"><i class="fa-solid fa-book-open"></i></div>
@@ -80,31 +67,25 @@
                             </div>
                         </div>
 
-                        <!-- 3. Kutucuk -->
                         <div class="w-card w-card-info">
                             <h3>Kendi Tarzında Öğren</h3>
                             <p>Sektörleri sadece okumakla kalmayın. İster yolda podcast olarak dinleyin, ister detaylı videolarla izleyin, ister infografiklerle veriyi içselleştirin.</p>
                         </div>
                     </div>
-                    
-                    <div class="created-by">Created by Murat Özgür Ünal</div>
                 </div>
 
-                <!-- SAĞ TARAF: KAYAN YAZILAR -->
                 <div class="welcome-right">
                     <div class="marquee-container">
                         <div class="marquee-content" id="marqueeContent">
-                            <!-- JS ile Ana Sektörler buraya animasyonlu olarak basılacak -->
-                        </div>
+                            </div>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- MEDYA LİSTELEME EKRANI (Yeni Eklendi) -->
         <div id="mediaListView" class="media-list-view">
             <div class="ml-header">
-                <button class="back-btn" onclick="goHome()"><i class="fa-solid fa-arrow-left"></i> Ana Sayfaya Dön</button>
+                <button class="back-btn" onclick="goBack()"><i class="fa-solid fa-arrow-left"></i> Geri Dön</button>
                 <h2 id="mlTitle">Kategori Adı</h2>
             </div>
             <div class="search-box ml-search">
@@ -112,14 +93,12 @@
                 <input type="text" id="mediaSearchInput" placeholder="Bu kategoride sektör ara..." onkeyup="filterMediaList()">
             </div>
             <div class="media-grid" id="mediaGrid">
-                <!-- Seçilen kategoriye ait kartlar buraya gelecek -->
-            </div>
+                </div>
         </div>
 
-        <!-- SEKTÖR DETAY EKRANI -->
         <div class="sector-details" id="sectorDetails">
             <div class="detail-top-actions">
-                <button class="back-btn" onclick="goHome()"><i class="fa-solid fa-arrow-left"></i> Ana Sayfaya Dön</button>
+                <button class="back-btn" onclick="goBack()"><i class="fa-solid fa-arrow-left"></i> Geri Dön</button>
             </div>
             
             <div class="detail-header">
@@ -132,9 +111,15 @@
                 </div>
             </div>
 
-            <!-- MEDYA ALANI (VİDEO, SES, İNFOGRAFİK) -->
+            <div class="quick-media-tabs" id="quickMediaTabs">
+                <button class="q-tab" data-type="" onclick="changeSectorMedia('')"><i class="fa-solid fa-layer-group"></i> Tümü</button>
+                <button class="q-tab" data-type="read" onclick="changeSectorMedia('read')"><i class="fa-solid fa-book-open"></i> Oku</button>
+                <button class="q-tab" data-type="video" onclick="changeSectorMedia('video')"><i class="fa-solid fa-play"></i> İzle</button>
+                <button class="q-tab" data-type="audio" onclick="changeSectorMedia('audio')"><i class="fa-solid fa-headphones"></i> Dinle</button>
+                <button class="q-tab" data-type="analyze" onclick="changeSectorMedia('analyze')"><i class="fa-solid fa-chart-line"></i> Analiz Et</button>
+            </div>
+
             <div class="media-section">
-                <!-- VİDEO KARTI -->
                 <div class="media-card video-card" id="videoContainer">
                     <div class="media-placeholder">
                         <i class="fa-brands fa-youtube"></i>
@@ -143,7 +128,6 @@
                 </div>
                 
                 <div class="media-side">
-                    <!-- SES KARTI -->
                     <div class="media-card audio-card" id="audioContainer">
                         <h4><i class="fa-solid fa-podcast"></i> Sektör Podcasti</h4>
                         <audio controls class="custom-audio">
@@ -151,7 +135,6 @@
                         </audio>
                     </div>
                     
-                    <!-- İNFOGRAFİK KARTI -->
                     <div class="media-card infographic-card" id="infographicContainer">
                         <div class="media-placeholder sm">
                             <i class="fa-solid fa-image"></i>
@@ -161,7 +144,6 @@
                 </div>
             </div>
 
-            <!-- ANA ODAK: NASIL PARA KAZANIRLAR? -->
             <div class="highlight-card">
                 <div class="highlight-header">
                     <div class="icon-box" style="width: 80px; height: 80px; border-radius: 16px;">
@@ -174,12 +156,14 @@
 
             <h3 class="section-title">Sektörün Diğer Dinamikleri</h3>
             <div class="action-grid" id="actionGrid">
-                <!-- Buton Kartlar JS ile satır satır buraya basılacak -->
-            </div>
+                </div>
+        </div>
+
+        <div class="global-footer">
+            Created by Murat Özgür Ünal
         </div>
     </main>
 
-    <!-- METİN BİLGİ MODALI (DİNAMİKLER İÇİN) -->
     <div id="infoModal" class="modal">
         <div class="modal-content">
             <span class="close-btn" onclick="closeModal()"><i class="fa-solid fa-xmark"></i></span>
@@ -193,13 +177,11 @@
         </div>
     </div>
 
-    <!-- İNFOGRAFİK GÖRSEL MODALI -->
     <div id="imageModal" class="image-modal">
         <span class="image-close-btn" onclick="closeImageModal()"><i class="fa-solid fa-xmark"></i></span>
         <img class="image-modal-content" id="modalExpandedImg">
     </div>
 
-    <!-- Kendi JS Dosyamız -->
     <script src="script.js"></script>
 </body>
 </html>

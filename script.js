@@ -1,27 +1,24 @@
 const SHEET_ID = '1GE83Y_59Fnkn6qP5WnZH-FHkTpkI3E7yHC_l7TYXBzg';
 
-// Önbellek kırmak için versiyon numarası
 const SESSION_VERSION = new Date().getTime();
 const GOOGLE_SHEET_CSV_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&nocache=${SESSION_VERSION}`; 
 
 let allData = [];
-let currentMediaType = ''; // Yeni: Medya listeleme filtresi için
+let currentMediaType = ''; 
+
+// GEÇMİŞ HAFIZASI
+let viewHistory = ["welcomeScreen"];
+let currentActiveView = "welcomeScreen";
 
 document.addEventListener("DOMContentLoaded", () => {
     fetchData();
 
-    // 1. Dinamik Kart Modalı Arkaplana tıklayınca kapatma
     document.getElementById("infoModal").addEventListener('click', function(e) {
-        if(e.target === this) {
-            closeModal();
-        }
+        if(e.target === this) closeModal();
     });
 
-    // 2. İnfografik Görsel Modalı Arkaplana tıklayınca kapatma
     document.getElementById("imageModal").addEventListener('click', function(e) {
-        if(e.target === this) {
-            closeImageModal();
-        }
+        if(e.target === this) closeImageModal();
     });
 });
 
@@ -32,14 +29,11 @@ function fetchData() {
         skipEmptyLines: true,
         complete: function(results) {
             const rawData = results.data;
-
             if (!rawData || rawData.length < 3) {
                 showError("Veriye ulaşılamadı. Tablonun paylaşıma açık olduğundan emin olun.");
                 return;
             }
-
             const dataRows = rawData.slice(2);
-
             allData = dataRows.map((rowArray, index) => {
                 return {
                     rowNumber: index + 3,
@@ -56,9 +50,9 @@ function fetchData() {
                     "Çapraz Satış Fırsatları": rowArray[10] ? String(rowArray[10]).trim() : "",              
                     "Fırsat": rowArray[11] ? String(rowArray[11]).trim() : "",                               
                     "Risk": rowArray[12] ? String(rowArray[12]).trim() : "",
-                    "Video Linki": rowArray[13] ? String(rowArray[13]).trim() : "",    // N Sütunu
-                    "Ses Linki": rowArray[14] ? String(rowArray[14]).trim() : "",      // O Sütunu 
-                    "Görsel Linki": rowArray[15] ? String(rowArray[15]).trim() : ""    // P Sütunu
+                    "Video Linki": rowArray[13] ? String(rowArray[13]).trim() : "",    
+                    "Ses Linki": rowArray[14] ? String(rowArray[14]).trim() : "",      
+                    "Görsel Linki": rowArray[15] ? String(rowArray[15]).trim() : ""    
                 };
             });
 
@@ -91,39 +85,73 @@ function showError(message) {
 function cleanIconName(rawName) {
     if (!rawName) return "default";
     let cleaned = String(rawName);
-    
     cleaned = cleaned.replace(/\.svg/i, ''); 
     cleaned = cleaned.replace(/[\u2010-\u2015\u2212\uFE58\uFE63\uFF0D]/g, '-'); 
     cleaned = cleaned.replace(/[\s\u200B-\u200D\uFEFF\r\n]/g, ''); 
-    
     return cleaned.toLowerCase(); 
 }
 
-// =====================================================================
-// GÜNCELLEME: Ekran geçişlerini birbirine karıştırmayan GÜVENLİ FONKSİYON
-// =====================================================================
+// === SES VE VİDEOYU DURDURMA FONKSİYONU ===
+function stopMedia() {
+    const vid = document.getElementById("sectorVideo");
+    const aud = document.getElementById("sectorAudio");
+    if (vid) { vid.pause(); }
+    if (aud) { aud.pause(); }
+}
+
+// === GÜVENLİ VE GEÇMİŞLİ EKRAN GEÇİŞİ ===
 function switchView(activeViewId) {
-    // 1. Önce bütün olası ekranları sayfadan tamamen sil (gizle)
+    stopMedia(); // EKRAN DEĞİŞİRKEN MEDYAYI SUSTUR!
+
+    // Eğer zaten o ekrandaysak geçmişe tekrar ekleme
+    if (currentActiveView !== activeViewId) {
+        viewHistory.push(activeViewId);
+        currentActiveView = activeViewId;
+    }
+
     const views = ["welcomeScreen", "mediaListView", "sectorDetails"];
     views.forEach(id => {
         const el = document.getElementById(id);
         if (el) el.style.display = "none";
     });
     
-    // 2. Sadece istenen ekranı görünür yap
     const activeEl = document.getElementById(activeViewId);
     if (activeEl) {
-        if (activeViewId === "welcomeScreen") {
-            activeEl.style.display = "flex";
-        } else {
-            activeEl.style.display = "block";
-        }
+        if (activeViewId === "welcomeScreen") activeEl.style.display = "flex";
+        else activeEl.style.display = "block";
     }
 
-    // 3. Telefondaysa tıklandığında sayfanın en üstüne kaydır (aşşağıda kalmasın)
     window.scrollTo(0, 0);
 }
 
+// === GERİ DÖN BUTONU İŞLEVİ ===
+function goBack() {
+    stopMedia(); // GERİ DÖNERKEN MEDYAYI SUSTUR!
+
+    if (viewHistory.length > 1) {
+        viewHistory.pop(); // Şu anki ekranı geçmişten sil
+        let previousView = viewHistory[viewHistory.length - 1]; // Bir öncekini al
+        currentActiveView = previousView;
+
+        const views = ["welcomeScreen", "mediaListView", "sectorDetails"];
+        views.forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.style.display = "none";
+        });
+
+        const activeEl = document.getElementById(previousView);
+        if (activeEl) {
+            activeEl.style.display = (previousView === "welcomeScreen") ? "flex" : "block";
+        }
+
+        window.scrollTo(0, 0);
+        
+        // Eğer en başa döndüysek menüdeki seçili rengi kaldır
+        if(previousView === "welcomeScreen") {
+            document.querySelectorAll('.sector-item').forEach(el => el.classList.remove('active'));
+        }
+    }
+}
 
 function renderSidebar(data) {
     const listElement = document.getElementById("sectorList");
@@ -132,7 +160,6 @@ function renderSidebar(data) {
     data.forEach((row) => {
         const anaSektor = row["Ana Sektör"];
         const sektor = row["Sektör"];
-
         if(!sektor) return;
 
         const gorselAdi = cleanIconName(row["Görsel Adı"]);
@@ -153,36 +180,23 @@ function renderSidebar(data) {
             </div>
         `;
         
-        // Sol menüden tıklandığında filtreyi sıfırla ve detay ekranına geç
         li.onclick = () => {
-            currentMediaType = ''; 
+            currentMediaType = ''; // Sol menüden tıklanınca her şeyi göster
             showDetails(row, li);
+            if(window.innerWidth <= 768) {
+                document.getElementById("sidebar").classList.remove("active");
+            }
         };
         
         listElement.appendChild(li);
     });
 }
 
-// === ANA SAYFAYA DÖN BUTONU İŞLEVİ ===
-function goHome() {
-    currentMediaType = ''; 
-    switchView("welcomeScreen"); // Güncelleme: Güvenli geçiş kullanıldı
-    
-    // Sidebar'daki aktifliği kaldır
-    document.querySelectorAll('.sector-item').forEach(el => el.classList.remove('active'));
-
-    // Mobilde menü açıksa kapat
-    if(window.innerWidth <= 768) {
-        document.getElementById("sidebar").classList.remove("active");
-    }
-}
-
-// === KATEGORİ GÖRÜNÜMÜNÜ AÇ (OKU, İZLE VS.) ===
 function openMediaView(type) {
     currentMediaType = type;
-    switchView("mediaListView"); // Güncelleme: Güvenli geçiş kullanıldı
+    switchView("mediaListView"); 
     
-    document.getElementById("mediaSearchInput").value = ""; // Aramayı sıfırla
+    document.getElementById("mediaSearchInput").value = ""; 
 
     let title = "";
     if(type === 'read') title = "<i class='fa-solid fa-book-open'></i> Tüm Sektörleri İncele";
@@ -202,16 +216,13 @@ function renderMediaList() {
     const fallbackSVG = "data:image/svg+xml;charset=UTF-8,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2224%22 height=%2224%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%2394a3b8%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Crect x=%223%22 y=%223%22 width=%2218%22 height=%2218%22 rx=%222%22 ry=%222%22%3E%3C/rect%3E%3Ccircle cx=%228.5%22 cy=%228.5%22 r=%221.5%22%3E%3C/circle%3E%3Cpolyline points=%2221 15 16 10 5 21%22%3E%3C/polyline%3E%3C/svg%3E";
 
     allData.forEach(row => {
-        // İlgili veri yoksa pas geç
         if(currentMediaType === 'video' && (!row["Video Linki"] || row["Video Linki"] === "")) return;
         if(currentMediaType === 'audio' && (!row["Ses Linki"] || row["Ses Linki"] === "")) return;
         if(currentMediaType === 'analyze' && (!row["Görsel Linki"] || row["Görsel Linki"] === "")) return;
-        // 'read' seçildiyse hepsini göster
 
         const sName = row["Sektör"] || "";
         const aName = row["Ana Sektör"] || "";
 
-        // Arama filtresi
         if(!sName.toLowerCase().includes(query) && !aName.toLowerCase().includes(query)) return;
 
         const gorselAdi = cleanIconName(row["Görsel Adı"]);
@@ -252,11 +263,10 @@ function showDetails(row, element) {
     document.querySelectorAll('.sector-item').forEach(el => el.classList.remove('active'));
     if(element) element.classList.add('active');
 
-    switchView("sectorDetails"); // Güncelleme: Güvenli geçiş kullanıldı
+    switchView("sectorDetails"); 
 
     document.getElementById("sektorTitle").innerText = row["Sektör"];
     
-    // Üst Başlık İkonu 
     const gorselAdi = cleanIconName(row["Görsel Adı"]);
     const titleIcon = document.getElementById("sektorTitleIcon");
     titleIcon.src = `icons/${gorselAdi}.svg?v=${SESSION_VERSION}`;
@@ -269,7 +279,6 @@ function showDetails(row, element) {
     titleIcon.style.display = "block";
     document.getElementById("anaSektorBadge").innerText = row["Ana Sektör"];
 
-    // MEDYA DOSYALARINI GOOGLE SHEETS CLOUDINARY LİNKLERİNDEN ÇEKME
     const videoContainer = document.getElementById("videoContainer");
     const audioContainer = document.getElementById("audioContainer");
     const infographicContainer = document.getElementById("infographicContainer");
@@ -278,12 +287,10 @@ function showDetails(row, element) {
     const audioUrl = row["Ses Linki"];
     const infographicUrl = row["Görsel Linki"];
 
-    // 1. Video
     if (videoUrl) {
         videoContainer.innerHTML = `
             <video id="sectorVideo" controls style="width: 100%; height: 100%; object-fit: cover; border-radius: 16px;">
                 <source src="${videoUrl}" type="video/mp4">
-                Tarayıcınız video etiketini desteklemiyor.
             </video>
         `;
     } else {
@@ -295,13 +302,11 @@ function showDetails(row, element) {
         `;
     }
 
-    // 2. Ses / Podcast
     if (audioUrl) {
         audioContainer.innerHTML = `
             <h4><i class="fa-solid fa-podcast"></i> Sektör Podcasti</h4>
             <audio id="sectorAudio" controls class="custom-audio" style="width: 100%;">
                 <source src="${audioUrl}" type="audio/mpeg">
-                Tarayıcınız ses öğesini desteklemiyor.
             </audio>
         `;
     } else {
@@ -325,14 +330,12 @@ function showDetails(row, element) {
             if (audElement && !audElement.paused) audElement.pause();
         });
     }
-
     if (audElement) {
         audElement.addEventListener('play', () => {
             if (vidElement && !vidElement.paused) vidElement.pause();
         });
     }
 
-    // 3. İnfografik
     if (infographicUrl) {
         infographicContainer.innerHTML = `
             <img src="${infographicUrl}" 
@@ -350,7 +353,6 @@ function showDetails(row, element) {
         `;
     }
 
-    // Ana Tablo Verisi
     const mainText = row["Bu adamlar parayı nasıl kazanır?"];
     document.getElementById("mainInfoText").innerText = mainText && mainText !== "" 
                                                         ? mainText 
@@ -402,24 +404,34 @@ function showDetails(row, element) {
         }
     });
 
-    if(window.innerWidth <= 768) {
-        document.getElementById("sidebar").classList.remove("active");
-    }
+    // En son her şeyi filtrele
+    applyMediaFilter();
+}
 
-    // =========================================================
-    // SEÇİLEN KATEGORİYE GÖRE GÖRÜNÜM FİLTRELEME
-    // =========================================================
+// === HIZLI GEÇİŞ BUTONU İŞLEVİ ===
+function changeSectorMedia(type) {
+    stopMedia(); // Video oynuyorsa durdur
+    currentMediaType = type;
+    applyMediaFilter();
+}
+
+// === GÖRÜNÜM FİLTRELEME FONKSİYONU ===
+function applyMediaFilter() {
     const mediaSectionEl = document.querySelector(".media-section");
     const videoCardEl = document.getElementById("videoContainer");
     const mediaSideEl = document.querySelector(".media-side");
     const audioCardEl = document.getElementById("audioContainer");
     const infoCardEl = document.getElementById("infographicContainer");
-    
     const highlightCardEl = document.querySelector(".highlight-card");
     const sectionTitleEl = document.querySelector(".section-title");
     const actionGridListEl = document.getElementById("actionGrid");
 
-    // 1. Önce her şeyi varsayılan olarak görünür yap
+    // Butonların renklerini ayarla
+    document.querySelectorAll('.q-tab').forEach(btn => btn.classList.remove('active'));
+    let activeBtn = document.querySelector(`.q-tab[data-type="${currentMediaType}"]`);
+    if(activeBtn) activeBtn.classList.add('active');
+
+    // 1. Önce her şeyi görünür yap
     mediaSectionEl.style.display = "grid";
     videoCardEl.style.display = "flex";
     mediaSideEl.style.display = "flex";
@@ -429,19 +441,17 @@ function showDetails(row, element) {
     sectionTitleEl.style.display = "block";
     actionGridListEl.style.display = "block";
 
-    // 2. Mevcut moda göre fazlalıkları gizle
+    // 2. Moda göre gizle
     if (currentMediaType === 'read') {
         mediaSectionEl.style.display = "none";
     } 
     else if (currentMediaType === 'video') {
-        mediaSectionEl.style.display = "block"; 
         mediaSideEl.style.display = "none";
         highlightCardEl.style.display = "none";
         sectionTitleEl.style.display = "none";
         actionGridListEl.style.display = "none";
     } 
     else if (currentMediaType === 'audio') {
-        mediaSectionEl.style.display = "block";
         videoCardEl.style.display = "none";
         infoCardEl.style.display = "none";
         highlightCardEl.style.display = "none";
@@ -449,7 +459,6 @@ function showDetails(row, element) {
         actionGridListEl.style.display = "none";
     } 
     else if (currentMediaType === 'analyze') {
-        mediaSectionEl.style.display = "block";
         videoCardEl.style.display = "none";
         audioCardEl.style.display = "none";
         highlightCardEl.style.display = "none";
@@ -458,7 +467,6 @@ function showDetails(row, element) {
     }
 }
 
-// === METİN MODAL KONTROLLERİ ===
 function openModal(title, text, iconSrc) {
     const modal = document.getElementById("infoModal");
     document.getElementById("modalTitle").innerText = title;
@@ -471,7 +479,6 @@ function closeModal() {
     document.getElementById("infoModal").classList.remove("show");
 }
 
-// === İNFOGRAFİK GÖRSEL MODAL KONTROLLERİ ===
 function openImageModal(imgSrc) {
     const modal = document.getElementById("imageModal");
     const modalImg = document.getElementById("modalExpandedImg");
@@ -483,7 +490,6 @@ function closeImageModal() {
     document.getElementById("imageModal").classList.remove("show");
 }
 
-// === ARAMA VE MENÜ KONTROLLERİ ===
 function filterSectors() {
     const input = document.getElementById("searchInput").value.toLowerCase();
     const items = document.querySelectorAll(".sector-item");
