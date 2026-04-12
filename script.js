@@ -99,6 +99,32 @@ function cleanIconName(rawName) {
     return cleaned.toLowerCase(); 
 }
 
+// =====================================================================
+// GÜNCELLEME: Ekran geçişlerini birbirine karıştırmayan GÜVENLİ FONKSİYON
+// =====================================================================
+function switchView(activeViewId) {
+    // 1. Önce bütün olası ekranları sayfadan tamamen sil (gizle)
+    const views = ["welcomeScreen", "mediaListView", "sectorDetails"];
+    views.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.style.display = "none";
+    });
+    
+    // 2. Sadece istenen ekranı görünür yap
+    const activeEl = document.getElementById(activeViewId);
+    if (activeEl) {
+        if (activeViewId === "welcomeScreen") {
+            activeEl.style.display = "flex";
+        } else {
+            activeEl.style.display = "block";
+        }
+    }
+
+    // 3. Telefondaysa tıklandığında sayfanın en üstüne kaydır (aşşağıda kalmasın)
+    window.scrollTo(0, 0);
+}
+
+
 function renderSidebar(data) {
     const listElement = document.getElementById("sectorList");
     listElement.innerHTML = "";
@@ -127,7 +153,7 @@ function renderSidebar(data) {
             </div>
         `;
         
-        // GÜNCELLEME: Sol menüden tıklandığında filtreyi sıfırla
+        // Sol menüden tıklandığında filtreyi sıfırla ve detay ekranına geç
         li.onclick = () => {
             currentMediaType = ''; 
             showDetails(row, li);
@@ -139,21 +165,23 @@ function renderSidebar(data) {
 
 // === ANA SAYFAYA DÖN BUTONU İŞLEVİ ===
 function goHome() {
-    currentMediaType = ''; // GÜNCELLEME: Ana sayfaya dönünce modu sıfırla
-    document.getElementById("sectorDetails").style.display = "none";
-    document.getElementById("mediaListView").style.display = "none";
-    document.getElementById("welcomeScreen").style.display = "flex";
+    currentMediaType = ''; 
+    switchView("welcomeScreen"); // Güncelleme: Güvenli geçiş kullanıldı
     
     // Sidebar'daki aktifliği kaldır
     document.querySelectorAll('.sector-item').forEach(el => el.classList.remove('active'));
+
+    // Mobilde menü açıksa kapat
+    if(window.innerWidth <= 768) {
+        document.getElementById("sidebar").classList.remove("active");
+    }
 }
 
+// === KATEGORİ GÖRÜNÜMÜNÜ AÇ (OKU, İZLE VS.) ===
 function openMediaView(type) {
     currentMediaType = type;
+    switchView("mediaListView"); // Güncelleme: Güvenli geçiş kullanıldı
     
-    document.getElementById("welcomeScreen").style.display = "none";
-    document.getElementById("sectorDetails").style.display = "none";
-    document.getElementById("mediaListView").style.display = "block";
     document.getElementById("mediaSearchInput").value = ""; // Aramayı sıfırla
 
     let title = "";
@@ -224,9 +252,7 @@ function showDetails(row, element) {
     document.querySelectorAll('.sector-item').forEach(el => el.classList.remove('active'));
     if(element) element.classList.add('active');
 
-    document.getElementById("welcomeScreen").style.display = "none";
-    document.getElementById("mediaListView").style.display = "none";
-    document.getElementById("sectorDetails").style.display = "block";
+    switchView("sectorDetails"); // Güncelleme: Güvenli geçiş kullanıldı
 
     document.getElementById("sektorTitle").innerText = row["Sektör"];
     
@@ -381,7 +407,7 @@ function showDetails(row, element) {
     }
 
     // =========================================================
-    // GÜNCELLEME: SEÇİLEN KATEGORİYE GÖRE GÖRÜNÜM FİLTRELEME
+    // SEÇİLEN KATEGORİYE GÖRE GÖRÜNÜM FİLTRELEME
     // =========================================================
     const mediaSectionEl = document.querySelector(".media-section");
     const videoCardEl = document.getElementById("videoContainer");
@@ -393,7 +419,7 @@ function showDetails(row, element) {
     const sectionTitleEl = document.querySelector(".section-title");
     const actionGridListEl = document.getElementById("actionGrid");
 
-    // 1. Önce her şeyi varsayılan olarak görünür yap (Önceki tıklamadan kalanları temizle)
+    // 1. Önce her şeyi varsayılan olarak görünür yap
     mediaSectionEl.style.display = "grid";
     videoCardEl.style.display = "flex";
     mediaSideEl.style.display = "flex";
@@ -405,11 +431,9 @@ function showDetails(row, element) {
 
     // 2. Mevcut moda göre fazlalıkları gizle
     if (currentMediaType === 'read') {
-        // SADECE OKU: Tüm medya alanını gizle
         mediaSectionEl.style.display = "none";
     } 
     else if (currentMediaType === 'video') {
-        // SADECE İZLE: Sağ tarafı (ses/görsel) ve alt yazıları gizle, videoyu tam ekrana yay
         mediaSectionEl.style.display = "block"; 
         mediaSideEl.style.display = "none";
         highlightCardEl.style.display = "none";
@@ -417,7 +441,6 @@ function showDetails(row, element) {
         actionGridListEl.style.display = "none";
     } 
     else if (currentMediaType === 'audio') {
-        // SADECE DİNLE: Video, İnfografik ve metinleri gizle
         mediaSectionEl.style.display = "block";
         videoCardEl.style.display = "none";
         infoCardEl.style.display = "none";
@@ -426,7 +449,6 @@ function showDetails(row, element) {
         actionGridListEl.style.display = "none";
     } 
     else if (currentMediaType === 'analyze') {
-        // SADECE ANALİZ ET: Video, Ses ve metinleri gizle
         mediaSectionEl.style.display = "block";
         videoCardEl.style.display = "none";
         audioCardEl.style.display = "none";
