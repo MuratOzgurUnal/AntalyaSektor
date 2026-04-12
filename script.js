@@ -5,6 +5,7 @@ const SESSION_VERSION = new Date().getTime();
 const GOOGLE_SHEET_CSV_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&nocache=${SESSION_VERSION}`; 
 
 let allData = [];
+let currentMediaType = ''; // Yeni: Medya listeleme filtresi için
 
 document.addEventListener("DOMContentLoaded", () => {
     fetchData();
@@ -55,9 +56,9 @@ function fetchData() {
                     "Çapraz Satış Fırsatları": rowArray[10] ? String(rowArray[10]).trim() : "",              
                     "Fırsat": rowArray[11] ? String(rowArray[11]).trim() : "",                               
                     "Risk": rowArray[12] ? String(rowArray[12]).trim() : "",
-                    "Video Linki": rowArray[13] ? String(rowArray[13]).trim() : "",    // N Sütunu (Video MP4)
-                    "Ses Linki": rowArray[14] ? String(rowArray[14]).trim() : "",      // O Sütunu (Podcast MP3)
-                    "Görsel Linki": rowArray[15] ? String(rowArray[15]).trim() : ""    // P Sütunu (İnfografik JPG)
+                    "Video Linki": rowArray[13] ? String(rowArray[13]).trim() : "",    // N Sütunu
+                    "Ses Linki": rowArray[14] ? String(rowArray[14]).trim() : "",      // O Sütunu 
+                    "Görsel Linki": rowArray[15] ? String(rowArray[15]).trim() : ""    // P Sütunu
                 };
             });
 
@@ -114,6 +115,7 @@ function renderSidebar(data) {
 
         const li = document.createElement("li");
         li.className = "sector-item";
+        li.setAttribute("data-sektor", sektor); 
         
         li.innerHTML = `
             <div class="sector-icon" style="background-color: transparent;">
@@ -124,21 +126,111 @@ function renderSidebar(data) {
                 <p>${anaSektor}</p>
             </div>
         `;
-        li.onclick = () => showDetails(row, li);
+        
+        // GÜNCELLEME: Sol menüden tıklandığında filtreyi sıfırla
+        li.onclick = () => {
+            currentMediaType = ''; 
+            showDetails(row, li);
+        };
+        
         listElement.appendChild(li);
     });
 }
 
+// === ANA SAYFAYA DÖN BUTONU İŞLEVİ ===
+function goHome() {
+    currentMediaType = ''; // GÜNCELLEME: Ana sayfaya dönünce modu sıfırla
+    document.getElementById("sectorDetails").style.display = "none";
+    document.getElementById("mediaListView").style.display = "none";
+    document.getElementById("welcomeScreen").style.display = "flex";
+    
+    // Sidebar'daki aktifliği kaldır
+    document.querySelectorAll('.sector-item').forEach(el => el.classList.remove('active'));
+}
+
+function openMediaView(type) {
+    currentMediaType = type;
+    
+    document.getElementById("welcomeScreen").style.display = "none";
+    document.getElementById("sectorDetails").style.display = "none";
+    document.getElementById("mediaListView").style.display = "block";
+    document.getElementById("mediaSearchInput").value = ""; // Aramayı sıfırla
+
+    let title = "";
+    if(type === 'read') title = "<i class='fa-solid fa-book-open'></i> Tüm Sektörleri İncele";
+    if(type === 'video') title = "<i class='fa-solid fa-play'></i> Sektör Videoları";
+    if(type === 'audio') title = "<i class='fa-solid fa-headphones'></i> Sektör Podcastleri";
+    if(type === 'analyze') title = "<i class='fa-solid fa-chart-pie'></i> İnfografik ve Analizler";
+
+    document.getElementById("mlTitle").innerHTML = title;
+    renderMediaList();
+}
+
+function renderMediaList() {
+    const grid = document.getElementById("mediaGrid");
+    grid.innerHTML = "";
+    const query = document.getElementById("mediaSearchInput").value.toLowerCase();
+
+    const fallbackSVG = "data:image/svg+xml;charset=UTF-8,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2224%22 height=%2224%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%2394a3b8%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Crect x=%223%22 y=%223%22 width=%2218%22 height=%2218%22 rx=%222%22 ry=%222%22%3E%3C/rect%3E%3Ccircle cx=%228.5%22 cy=%228.5%22 r=%221.5%22%3E%3C/circle%3E%3Cpolyline points=%2221 15 16 10 5 21%22%3E%3C/polyline%3E%3C/svg%3E";
+
+    allData.forEach(row => {
+        // İlgili veri yoksa pas geç
+        if(currentMediaType === 'video' && (!row["Video Linki"] || row["Video Linki"] === "")) return;
+        if(currentMediaType === 'audio' && (!row["Ses Linki"] || row["Ses Linki"] === "")) return;
+        if(currentMediaType === 'analyze' && (!row["Görsel Linki"] || row["Görsel Linki"] === "")) return;
+        // 'read' seçildiyse hepsini göster
+
+        const sName = row["Sektör"] || "";
+        const aName = row["Ana Sektör"] || "";
+
+        // Arama filtresi
+        if(!sName.toLowerCase().includes(query) && !aName.toLowerCase().includes(query)) return;
+
+        const gorselAdi = cleanIconName(row["Görsel Adı"]);
+        const iconPath = `icons/${gorselAdi}.svg?v=${SESSION_VERSION}`;
+
+        const card = document.createElement("div");
+        card.className = "m-card";
+        card.innerHTML = `
+            <div class="m-icon">
+                <img src="${iconPath}" alt="icon" onerror="this.onerror=null; this.src='${fallbackSVG}';">
+            </div>
+            <h3>${sName}</h3>
+            <p>${aName}</p>
+        `;
+        
+        card.onclick = () => {
+            const liElement = Array.from(document.querySelectorAll('.sector-item')).find(el => el.getAttribute('data-sektor') === sName);
+            showDetails(row, liElement);
+        };
+        
+        grid.appendChild(card);
+    });
+
+    if(grid.innerHTML === "") {
+        grid.innerHTML = `<div style="grid-column: 1/-1; text-align:center; padding: 40px; color:#64748b;">
+            <i class="fa-solid fa-folder-open" style="font-size:3rem; margin-bottom:15px; opacity:0.5;"></i>
+            <p>Bu kategoriye ait sektör bulunamadı.</p>
+        </div>`;
+    }
+}
+
+function filterMediaList() {
+    renderMediaList();
+}
+
+
 function showDetails(row, element) {
     document.querySelectorAll('.sector-item').forEach(el => el.classList.remove('active'));
-    element.classList.add('active');
+    if(element) element.classList.add('active');
 
     document.getElementById("welcomeScreen").style.display = "none";
+    document.getElementById("mediaListView").style.display = "none";
     document.getElementById("sectorDetails").style.display = "block";
 
     document.getElementById("sektorTitle").innerText = row["Sektör"];
     
-    // Üst Başlık İkonu (Yerel ikonlar kullanılmaya devam ediyor)
+    // Üst Başlık İkonu 
     const gorselAdi = cleanIconName(row["Görsel Adı"]);
     const titleIcon = document.getElementById("sektorTitleIcon");
     titleIcon.src = `icons/${gorselAdi}.svg?v=${SESSION_VERSION}`;
@@ -160,7 +252,7 @@ function showDetails(row, element) {
     const audioUrl = row["Ses Linki"];
     const infographicUrl = row["Görsel Linki"];
 
-    // 1. Video (N Sütunu)
+    // 1. Video
     if (videoUrl) {
         videoContainer.innerHTML = `
             <video id="sectorVideo" controls style="width: 100%; height: 100%; object-fit: cover; border-radius: 16px;">
@@ -177,7 +269,7 @@ function showDetails(row, element) {
         `;
     }
 
-    // 2. Ses / Podcast (O Sütunu)
+    // 2. Ses / Podcast
     if (audioUrl) {
         audioContainer.innerHTML = `
             <h4><i class="fa-solid fa-podcast"></i> Sektör Podcasti</h4>
@@ -196,7 +288,6 @@ function showDetails(row, element) {
         `;
     }
 
-    // Medyaları yükle ve çakışma önleyici dinleyicileri ata
     const vidElement = document.getElementById("sectorVideo");
     const audElement = document.getElementById("sectorAudio");
     
@@ -215,7 +306,7 @@ function showDetails(row, element) {
         });
     }
 
-    // 3. İnfografik (P Sütunu)
+    // 3. İnfografik
     if (infographicUrl) {
         infographicContainer.innerHTML = `
             <img src="${infographicUrl}" 
@@ -288,9 +379,64 @@ function showDetails(row, element) {
     if(window.innerWidth <= 768) {
         document.getElementById("sidebar").classList.remove("active");
     }
+
+    // =========================================================
+    // GÜNCELLEME: SEÇİLEN KATEGORİYE GÖRE GÖRÜNÜM FİLTRELEME
+    // =========================================================
+    const mediaSectionEl = document.querySelector(".media-section");
+    const videoCardEl = document.getElementById("videoContainer");
+    const mediaSideEl = document.querySelector(".media-side");
+    const audioCardEl = document.getElementById("audioContainer");
+    const infoCardEl = document.getElementById("infographicContainer");
+    
+    const highlightCardEl = document.querySelector(".highlight-card");
+    const sectionTitleEl = document.querySelector(".section-title");
+    const actionGridListEl = document.getElementById("actionGrid");
+
+    // 1. Önce her şeyi varsayılan olarak görünür yap (Önceki tıklamadan kalanları temizle)
+    mediaSectionEl.style.display = "grid";
+    videoCardEl.style.display = "flex";
+    mediaSideEl.style.display = "flex";
+    audioCardEl.style.display = "block";
+    infoCardEl.style.display = "flex";
+    highlightCardEl.style.display = "block";
+    sectionTitleEl.style.display = "block";
+    actionGridListEl.style.display = "block";
+
+    // 2. Mevcut moda göre fazlalıkları gizle
+    if (currentMediaType === 'read') {
+        // SADECE OKU: Tüm medya alanını gizle
+        mediaSectionEl.style.display = "none";
+    } 
+    else if (currentMediaType === 'video') {
+        // SADECE İZLE: Sağ tarafı (ses/görsel) ve alt yazıları gizle, videoyu tam ekrana yay
+        mediaSectionEl.style.display = "block"; 
+        mediaSideEl.style.display = "none";
+        highlightCardEl.style.display = "none";
+        sectionTitleEl.style.display = "none";
+        actionGridListEl.style.display = "none";
+    } 
+    else if (currentMediaType === 'audio') {
+        // SADECE DİNLE: Video, İnfografik ve metinleri gizle
+        mediaSectionEl.style.display = "block";
+        videoCardEl.style.display = "none";
+        infoCardEl.style.display = "none";
+        highlightCardEl.style.display = "none";
+        sectionTitleEl.style.display = "none";
+        actionGridListEl.style.display = "none";
+    } 
+    else if (currentMediaType === 'analyze') {
+        // SADECE ANALİZ ET: Video, Ses ve metinleri gizle
+        mediaSectionEl.style.display = "block";
+        videoCardEl.style.display = "none";
+        audioCardEl.style.display = "none";
+        highlightCardEl.style.display = "none";
+        sectionTitleEl.style.display = "none";
+        actionGridListEl.style.display = "none";
+    }
 }
 
-// === METİN (DİNAMİKLER) MODAL KONTROLLERİ ===
+// === METİN MODAL KONTROLLERİ ===
 function openModal(title, text, iconSrc) {
     const modal = document.getElementById("infoModal");
     document.getElementById("modalTitle").innerText = title;

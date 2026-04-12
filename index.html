@@ -26,8 +26,11 @@
     <!-- KOYU TEMA SOL MENÜ -->
     <aside class="sidebar" id="sidebar">
         <div class="sidebar-header">
+            <!-- Mobilde belirginleştirilmiş sol tarafa hizalı buton -->
+            <button class="mobile-menu-btn" onclick="toggleMenu()">
+                <i class="fa-solid fa-bars"></i> <span>Sektörler</span>
+            </button>
             <h1><i class="fa-solid fa-chart-pie"></i> Sektör Analizi</h1>
-            <button class="mobile-menu-btn" onclick="toggleMenu()"><i class="fa-solid fa-bars"></i></button>
         </div>
         <div class="search-box">
             <i class="fa-solid fa-magnifying-glass search-icon"></i>
@@ -54,24 +57,24 @@
                             <h2>Antalya'nın tüm sektörlerini tek bir platformda, derinlemesine keşfedin.</h2>
                         </div>
                         
-                        <!-- 2. Kutucuk (Dairesel İkonlar) -->
+                        <!-- 2. Kutucuk (Dairesel İkonlar - Artık Tıklanabilir) -->
                         <div class="w-card w-card-circular">
-                            <div class="circle-item">
+                            <div class="circle-item" onclick="openMediaView('read')">
                                 <div class="circle-icon"><i class="fa-solid fa-book-open"></i></div>
                                 <span>OKU</span>
                             </div>
                             <div class="dot-sep">•</div>
-                            <div class="circle-item">
+                            <div class="circle-item" onclick="openMediaView('video')">
                                 <div class="circle-icon"><i class="fa-solid fa-play"></i></div>
                                 <span>İZLE</span>
                             </div>
                             <div class="dot-sep">•</div>
-                            <div class="circle-item">
+                            <div class="circle-item" onclick="openMediaView('audio')">
                                 <div class="circle-icon"><i class="fa-solid fa-headphones"></i></div>
                                 <span>DİNLE</span>
                             </div>
                             <div class="dot-sep">•</div>
-                            <div class="circle-item">
+                            <div class="circle-item" onclick="openMediaView('analyze')">
                                 <div class="circle-icon"><i class="fa-solid fa-chart-line"></i></div>
                                 <span>ANALİZ ET</span>
                             </div>
@@ -98,8 +101,27 @@
             </div>
         </div>
 
+        <!-- MEDYA LİSTELEME EKRANI (Yeni Eklendi) -->
+        <div id="mediaListView" class="media-list-view">
+            <div class="ml-header">
+                <button class="back-btn" onclick="goHome()"><i class="fa-solid fa-arrow-left"></i> Ana Sayfaya Dön</button>
+                <h2 id="mlTitle">Kategori Adı</h2>
+            </div>
+            <div class="search-box ml-search">
+                <i class="fa-solid fa-magnifying-glass search-icon ml-icon"></i>
+                <input type="text" id="mediaSearchInput" placeholder="Bu kategoride sektör ara..." onkeyup="filterMediaList()">
+            </div>
+            <div class="media-grid" id="mediaGrid">
+                <!-- Seçilen kategoriye ait kartlar buraya gelecek -->
+            </div>
+        </div>
+
         <!-- SEKTÖR DETAY EKRANI -->
         <div class="sector-details" id="sectorDetails">
+            <div class="detail-top-actions">
+                <button class="back-btn" onclick="goHome()"><i class="fa-solid fa-arrow-left"></i> Ana Sayfaya Dön</button>
+            </div>
+            
             <div class="detail-header">
                 <div>
                     <span class="badge" id="anaSektorBadge">Ana Sektör</span>
