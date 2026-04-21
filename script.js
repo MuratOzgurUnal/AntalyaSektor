@@ -1,8 +1,8 @@
-const SHEET_ID = '1GE83Y_59Fnkn6qP5WnZH-FHkTpkI3E7yHC_l7TYXBzg';
+// --- YEREL CSV DOSYASI AYARI ---
+// Dosyanızın adının tam olarak "sektor.csv" olduğundan ve index.html ile aynı klasörde olduğundan emin olun.
+const LOCAL_CSV_URL = `sektor.csv`;
 
 const SESSION_VERSION = new Date().getTime();
-const GOOGLE_SHEET_CSV_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&nocache=${SESSION_VERSION}`; 
-
 let allData = [];
 let currentMediaType = ''; 
 
@@ -23,16 +23,18 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 function fetchData() {
-    Papa.parse(GOOGLE_SHEET_CSV_URL, {
+    // URL kısmını LOCAL_CSV_URL olarak değiştirdik ve tarayıcı önbelleğe almasın diye zaman damgası ekledik
+    Papa.parse(`${LOCAL_CSV_URL}?nocache=${SESSION_VERSION}`, {
         download: true,
         header: false, 
         skipEmptyLines: true,
         complete: function(results) {
             const rawData = results.data;
             if (!rawData || rawData.length < 3) {
-                showError("Veriye ulaşılamadı. Tablonun paylaşıma açık olduğundan emin olun.");
+                showError("Veriye ulaşılamadı veya CSV dosyası boş.");
                 return;
             }
+            // Google Sheets formatında indirdiğiniz için ilk 2 satır başlık/boşluk vb. olabilir. O yüzden slice(2) kalıyor.
             const dataRows = rawData.slice(2);
             allData = dataRows.map((rowArray, index) => {
                 return {
@@ -68,7 +70,8 @@ function fetchData() {
             document.getElementById("loader").style.display = "none";
         },
         error: function(err) {
-            showError("Bağlantı reddedildi. Güvenlik ayarlarını kontrol edin.");
+            // Hata mesajını yerel dosya bulunamadı durumuna göre güncelledik
+            showError("CSV Dosyası okunamadı. Lütfen dosyayı Live Server ile çalıştırdığınızdan ve dosya adının 'sektor.csv' olduğundan emin olun.");
         }
     });
 }
@@ -77,7 +80,7 @@ function showError(message) {
     const loader = document.getElementById("loader");
     loader.innerHTML = `<div style="text-align:center; padding: 20px;">
         <i class="fa-solid fa-circle-exclamation" style="font-size: 3rem; margin-bottom: 15px; color: #ef4444;"></i>
-        <h3 style="color: #1e293b; margin-bottom: 10px;">Bağlantı Hatası</h3>
+        <h3 style="color: #1e293b; margin-bottom: 10px;">Bağlantı / Dosya Hatası</h3>
         <p style="color: #64748b;">${message}</p>
     </div>`;
 }
